@@ -21,5 +21,6 @@ while True:
     if len(transparent)==0 or idx>=a.shape[0]:
         break
     b = a[idx]
+    image[transparent] = b[transparent]
 print(image.reshape(h, w))
 
