@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import networkx as nx
 f = open('input.txt').readline()
 arr = f.split(',')
 
@@ -45,22 +46,23 @@ class Amp:
         self.index = 0
         self.output_count = 0
         self.data = [0, 0, 0]
-        self.droid = (30, 30)
+        self.droid = 30+30j
         self.board = {}
         self.input = 0
         self.oxygen = None
         self.length = 0
         self.arr = {}
+        self.G = nx.Graph()
 
     def get_pos(self, input):
 
         dir = {
-            NORTH: (0,1),
-            SOUTH: (0,-1),
-            WEST: (-1,0),
-            EAST: (1, 0)
+            NORTH: 1j,
+            SOUTH: -1j,
+            WEST: -1,
+            EAST: 1
         }
-        return (self.droid[0] + dir[input][0], self.droid[1] + dir[input][1])
+        return self.droid + dir[input]
 
     def read_info(self, val):
         idb = self.get_pos(self.input)
@@ -68,85 +70,18 @@ class Amp:
         if val != WALL:
             self.droid = idb
 
-
-    def update_stats(self):
-        id = (self.data[0], self.data[1], )
-
-    def check_board(self):
-        for k in self.board:
-            if self.board[k] ==  MOVED_OK:
-                return False
-            return True
-
-    def compute_oxygen(self, x, y, t):
-        id = (x, y)
-        if id in self.arr:
-            return 10000000
-        if id in self.board:
-            self.arr[id] = t
-            if id == self.oxygen:
-                return 10000000
-            elif self.board[id] == WALL:
-                return 10000000
-            else:
-                self.board[id] = 10
-                if self.check_board():
-                    return t
-
-            a = self.compute_length(x + 1, y, t + 1)
-            b = self.compute_length(x - 1, y, t + 1)
-            c = self.compute_length(x   , y + 1, t + 1)
-            d = self.compute_length(x   , y - 1, t + 1)
-            return min(a,min(b,min(c,d)))
-        else:
-            return 10000000000
-
-    def compute_length(self, x, y, l):
-        id = (x, y)
-        if id in self.arr:
-            return 10000000
-        if id in self.board:
-            self.arr[id] = l
-            if id == self.oxygen:
-                print('Current l=',l)
-                return l
-            elif self.board[id] == WALL:
-                return 10000000
-            a = self.compute_length(x + 1, y, l + 1)
-            b = self.compute_length(x - 1, y, l + 1)
-            c = self.compute_length(x   , y + 1, l + 1)
-            d = self.compute_length(x   , y - 1, l + 1)
-            return min(a,min(b,min(c,d)))
-        else:
-            return 10000000000
-        
-
-    def get_distance(self, _input):
-        l = 0
-        pos = self.start
-        while True:
-            p = _input[pos]
-            if pos == self.oxygen:
-                return l 
-            dir = {
-                NORTH: (0,1),
-                SOUTH: (0,-1),
-                WEST: (-1,0),
-                EAST: (1, 0)
-            }
-            pos = (pos[0] + dir[p][0],pos[1] + dir[p][1])
-            l += 1
-
-
+    def get_pos_from_complex(self, cn):
+        return int(cn.real), int(cn.imag)
 
     def draw_board(self):
-        a = np.ones((2*self.start[0], 2*self.start[1]), dtype=np.int32)
+        dimx, dimy = self.get_pos_from_complex(self.start)
+        a = np.ones((2*dimx, 2*dimy), dtype=np.int32)
         for id in self.board:
-            a[id] = self.board[id]
-        a[self.droid] = 3
-        a[self.start] = 5
+            a[self.get_pos_from_complex(id)] = self.board[id]
+        a[self.get_pos_from_complex(self.droid)] = 3
+        a[dimx, dimy] = 5
         if self.oxygen is not None:
-            a[self.oxygen] = 4
+            a[self.get_pos_from_complex(self.oxygen)] = 4
         _d = {
             WALL: '#',
             MOVED_OK: '.',
@@ -235,12 +170,15 @@ class Amp:
                 store_output(1, self.input, mode_a)
                 self.index += 2
             elif operator == 4:
+                old_droid = self.droid
                 self.read_info(a)
                 if a == WALL:
                     _inputs[self.droid] += 1
                     if _inputs[self.droid] == 5:
                         _inputs[self.droid] = NORTH
                 elif a == MOVED_OK:
+                    if self.droid not in self.G.nodes:
+                        self.G.add_edge(old_droid, self.droid)
                     if self.droid in _inputs:
                         _inputs[self.droid] += 1
                         if _inputs[self.droid] == 5:
@@ -251,19 +189,16 @@ class Amp:
                     if self.droid == self.start:
                         self.length = 0
                 else:
-                    
+                    if self.droid not in self.G.nodes: 
+                        self.G.add_edge(old_droid, self.droid)
                     self.oxygen = self.droid
                     self.draw_board()
                     print('YES.... ', self.length)
-                    # l = self.get_distance(_inputs)
-                    l = self.compute_length(self.start[0], self.start[1], 0)
+                    l= nx.shortest_path_length(self.G, self.oxygen, self.start)
                     print('start to oxygen=', l)
-                    l = self.compute_oxygen(self.oxygen[0], self.oxygen[1], 0)
+                    l = nx.eccentricity(self.G, self.oxygen)
                     print('time to re-oxygen=', l)
                     return True
-                # print('DROID_POS: ', self.droid)
-                # self.draw_board()
-                # output.append(a)
                 self.index += 2
             elif operator == 5:
                 if a != 0:
