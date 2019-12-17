@@ -266,9 +266,9 @@ def compile_list(ll):
         if ax > bx:
             nl.append('L')
         if ay < by:
-            nl.append('U')
-        if ay > by:
             nl.append('D')
+        if ay > by:
+            nl.append('U')
     return nl
 
 nl = compile_list(l)
@@ -287,10 +287,36 @@ def compress_list(ll):
     nl.append([ch, rep_num])
     return nl
 
+def detect_turns(start,ll):
+    nl = []
+    dir = {
+        'L': 0,
+        'U': 1,
+        'R': 2,
+        'D': 3
+    }
+    change = {
+        -1: 'L',
+        1: 'R',
+        3: 'R',
+        -3: 'L'
+    }
+    current = start
+    for a in ll:
+        if current != a[0]:
+            print(current, a[0])
+            d = change[dir[a[0]] - dir[current]]
+            nl.append(d)
+            current = a[0]
+        nl.append(a[1])
+    return nl
+
+
 
 print(nl)
 print('*************')
 nl = compress_list(nl)
+nl = detect_turns('U',nl)
 print(nl)
 
 
