@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import networkx as nx
 f = open('input.txt').readline()
 arr = f.split(',')
 
@@ -38,6 +39,12 @@ SCAFFOLD = 35
 SPACE = 46
 EOL = 10
 X = 88
+COMMA = 44
+key_L = ord('L')
+key_R = ord('R')
+key_y = ord('y')
+key_n = ord('n')
+
 
 class Amp:
 
@@ -56,6 +63,7 @@ class Amp:
         self.map = []
         self._str = ''
         self.width = 0
+        self.robot = None
 
     def get_pos(self, input):
 
@@ -84,16 +92,53 @@ class Amp:
         self.width = 59
         print('len(map)={} WIDTH={}'.format(len(self.map),self.width))
         a = np.array(self.map, dtype=np.int32).reshape(-1, self.width)
-        print(a[0,:])
         ydim = a.shape[0]
         xdim = a.shape[1]
         print(a.shape)
         sum_call = 0
+        self.robot = (58, 18)
+        print('DBG: ', a[18,:])
         for ix in range(1, xdim-1):
             for iy in range(1, ydim-1):
                 if a[iy, ix] == SCAFFOLD and a[iy-1, ix] == SCAFFOLD and a[iy+1, ix] == SCAFFOLD and a[iy, ix-1] == SCAFFOLD and a[iy, ix+1] == SCAFFOLD:
                     sum_call += ix * iy
+                if a[iy, ix] in [UP, DOWN, LEFT, RIGHT]:
+                    print('DBG robot pos:', self.robot)
+                    self.robot = (ix, iy)
         return sum_call
+
+    def get_graph(self):
+        self.width = 59
+        a = np.array(self.map, dtype=np.int32).reshape(-1, self.width)
+        ydim = a.shape[0]
+        xdim = a.shape[1]
+        print(a.shape)
+        self.robot = (58, 18)
+        self.G = nx.Graph()
+        for ix in range(0, xdim):
+            for iy in range(0, ydim):
+                if a[iy, ix] == SCAFFOLD:
+                    ida = str('{},{}'.format(ix,iy))
+                    if iy > 0 and a[iy-1, ix] == SCAFFOLD:
+                        idb = str('{},{}'.format(ix,iy-1))
+                        self.G.add_edge(ida, idb)
+
+                    if iy < ydim-1 and a[iy+1, ix] == SCAFFOLD:
+                        idb = str('{},{}'.format(ix,iy+1))
+                        self.G.add_edge(ida, idb)
+
+                    if ix > 0 and a[iy, ix-1] == SCAFFOLD:
+                        idb = str('{},{}'.format(ix-1,iy))
+                        self.G.add_edge(ida, idb)
+
+                    if ix < xdim-1 and a[iy, ix+1] == SCAFFOLD:
+                        idb = str('{},{}'.format(ix+1,iy))
+                        self.G.add_edge(ida, idb)
+        ida = str('{},{}'.format(self.robot[0],self.robot[1]))
+        idb = str('{},{}'.format(self.robot[0]-1,self.robot[1]))
+        self.G.add_edge(ida, idb)
+        return self.G
+
 
 
     def update_stats(self):
@@ -206,6 +251,47 @@ class Amp:
 a = Amp()
 a.compute(arr)
 print('RES: ',  a.callibrate())
+
+G = a.get_graph()
+source = '58,18'
+l = list(nx.dfs_edges(G, source=source))
+def compile_list(ll):
+    nl = []
+    for edge in ll:
+        ax,ay = (int(x) for x in edge[0].split(','))
+        bx,by = (int(x) for x in edge[1].split(','))
+
+        if ax < bx:
+            nl.append('R')
+        if ax > bx:
+            nl.append('L')
+        if ay < by:
+            nl.append('U')
+        if ay > by:
+            nl.append('D')
+    return nl
+
+nl = compile_list(l)
+
+def compress_list(ll):
+    nl = []
+    ch = ll[0]
+    rep_num = 1
+    for a in ll[1:]:
+        if a == ch:
+            rep_num +=1
+        else:
+            nl.append([ch, rep_num])
+            rep_num = 1
+            ch = a
+    nl.append([ch, rep_num])
+    return nl
+
+
+print(nl)
+print('*************')
+nl = compress_list(nl)
+print(nl)
 
 
 
