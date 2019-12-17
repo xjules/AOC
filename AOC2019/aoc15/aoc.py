@@ -166,39 +166,34 @@ class Amp:
                 self.index += 4
             elif operator == 3:
                 self.input = _inputs[self.droid]
-                # print('SENDING INPUT {}'.format(_inputs))
                 store_output(1, self.input, mode_a)
                 self.index += 2
             elif operator == 4:
-                old_droid = self.droid
-                self.read_info(a)
+                # self.read_info(a)
                 if a == WALL:
-                    _inputs[self.droid] += 1
-                    if _inputs[self.droid] == 5:
-                        _inputs[self.droid] = NORTH
-                elif a == MOVED_OK:
-                    if self.droid not in self.G.nodes:
+                    _inputs[self.droid] = _inputs[self.droid] % 4 + 1
+                elif a in [MOVED_OK, MOVED_OXYGEN]:
+                    old_droid = self.droid
+                    dir = {
+                        NORTH: 1j,
+                        SOUTH: -1j,
+                        WEST: -1,
+                        EAST: 1
+                    }
+                    self.droid = self.droid + dir[self.input]
+                    if self.droid not in self.G.nodes or old_droid not in self.G.nodes:
                         self.G.add_edge(old_droid, self.droid)
                     if self.droid in _inputs:
-                        _inputs[self.droid] += 1
-                        if _inputs[self.droid] == 5:
-                            _inputs[self.droid] = NORTH
+                        _inputs[self.droid] = _inputs[self.droid] % 4 + 1
                     else:
                         _inputs[self.droid] = NORTH
                     self.length += 1
                     if self.droid == self.start:
                         self.length = 0
-                else:
-                    if self.droid not in self.G.nodes: 
-                        self.G.add_edge(old_droid, self.droid)
-                    self.oxygen = self.droid
-                    self.draw_board()
-                    print('YES.... ', self.length)
-                    l= nx.shortest_path_length(self.G, self.oxygen, self.start)
-                    print('start to oxygen=', l)
-                    l = nx.eccentricity(self.G, self.oxygen)
-                    print('time to re-oxygen=', l)
-                    return True
+                    if a == MOVED_OXYGEN:
+                        self.oxygen = self.droid
+                        print('HERE', self.droid)
+                        return
                 self.index += 2
             elif operator == 5:
                 if a != 0:
@@ -225,6 +220,13 @@ class Amp:
 
 a = Amp()
 a.compute(arr)
+# a.draw_board()
+print('YES.... ', a.length)
+l = nx.shortest_path_length(a.G, a.oxygen, a.start)
+print('start to oxygen=', l)
+l = nx.eccentricity(a.G, a.oxygen)
+print('time to re-oxygen=', l)
+
 
 
 
