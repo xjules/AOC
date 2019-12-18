@@ -39,11 +39,24 @@ nx.set_node_attributes(G, dict_map, 'val')
 # l = list(nx.bfs_tree(G, player))
 # l = list(nx.dfs_preorder_nodes(G, player))
 
-lower = [k for k in keys if k.islower()]
-upper = [k for k in keys if k.isupper()]
+lower = {k:keys[k] for k in keys if k.islower()}
+upper = {k:keys[k] for k in keys if k.isupper()}
 
+print(lower)
+print(upper)
+paths = {}
 for a in lower:
-    nx.short
+    print(a, a.upper())
+    A = a.upper()
+    if A in upper:
+        l = list(nx.all_shortest_paths(G, lower[a], upper[a.upper()]))
+        paths[a] = l
+    print(l)
+
+ll = list(nx.all_shortest_paths(G, player, [lower[k] for k in paths]))
+print(ll)
+
+exit(1)
 
 
 q = [(player, 0, None)]
