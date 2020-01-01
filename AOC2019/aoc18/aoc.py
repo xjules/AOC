@@ -2,81 +2,88 @@ import numpy as np
 import os
 import networkx as nx
 import queue
+from copy import deepcopy
+from heapq import heappop, heappush
 
 def read_input():
-    f = open('input2.txt').readlines()
-    pos = 0j
-    dict_map = {}
-    keys = {}
-    player = None
-    for l in f:
-        npos = pos
-        for a in l:
-            if a not in ['#','\n']:
-                dict_map[pos] = a
-            if a == '@':
-                player = pos
-                dict_map[pos] = '.'
-            else:
-                keys[a] = pos
-            pos += 1
-        pos = npos + 1j
-    dimx = int(pos.real)
-    dimy = int(pos.imag)
-    
-    return dict_map, player, keys
+    with open('input.txt') as f:
+        f = [x.strip() for x in f.readlines()]
+        keys = {}
+        G = nx.grid_2d_graph(len(f), len(f[0]), create_using=nx.Graph)
+        for x in range(len(f)):
+            for y in range(len(f[0])):
+                if f[x][y] in ['#','\n']:
+                    G.remove_node((x, y))
+                elif f[x][y] == '@':
+                    player = (x,y)
+                    G.nodes[(x,y)]['val'] = '.'
+                else:
+                    if f[x][y].islower():
+                        keys[f[x][y]] = (x,y)
+                    G.nodes[(x,y)]['val'] = f[x][y]
+        return G, player, keys
+G, player, keys = read_input()
 
-G = nx.Graph()
-dict_map, player, keys = read_input()
-for p in dict_map:
-    for d in [-1, 1j, 1, -1j]:
-        if (p+d) in dict_map:
-            G.add_edge(p, p+d)
+keys_all = [keys[k] for k in keys if k.islower()]
 
-nx.set_node_attributes(G, dict_map, 'val')
+def get_doors(g, l):
+    doors = set()
+    for a in l:
+        if g.nodes[a]['val'].isupper():
+            doors.add(g.nodes[a]['val'].lower())
+    return doors
 
-# l = list(nx.bfs_edges(G, player))
-# l = list(nx.bfs_tree(G, player))
-# l = list(nx.dfs_preorder_nodes(G, player))
+if __name__== "__main__":
+    graph = G
+    # get all shortest paths with doors
+    print('shortest path ....')
+    shortest_path = {}
+    for key_pos_a in [player] + keys_all:
+        for key_pos_b in [player] + keys_all:
+            if key_pos_a != key_pos_b:
+                # print('doing ', graph.nodes[key_pos_a]['val'], graph.nodes[key_pos_b]['val'])
+                id = (key_pos_b, key_pos_a)
+                if id in shortest_path:
+                    shortest_path[(key_pos_a, key_pos_b)] = shortest_path[id].copy()
+                else:
+                    node_to_key = list(nx.shortest_path(graph, key_pos_a, key_pos_b))
+                    doors = get_doors(graph, node_to_key)
+                    shortest_path[(key_pos_a, key_pos_b)] = [len(node_to_key)-1, doors]
 
-lower = {k:keys[k] for k in keys if k.islower()}
-upper = {k:keys[k] for k in keys if k.isupper()}
+    print('shortest path done!')
+    node = player
+    q = [(0, tuple(keys_all), set([]), player)]
+    num_keys = len(keys_all)
+    min_dst = 100000000000000
 
-print(lower)
-print(upper)
-paths = {}
-for a in lower:
-    print(a, a.upper())
-    A = a.upper()
-    if A in upper:
-        l = list(nx.all_shortest_paths(G, lower[a], upper[a.upper()]))
-        paths[a] = l
-    print(l)
+    visited = set()
+    while True:
+        dst, keys_left, keys_collected, node = heappop(q)
+        id = (tuple(keys_left), ''.join(keys_collected))
+        if id in visited:
+            continue
+        visited.add(id)
+        # print('DEBUG: ', len(keys_left), len(keys_collected), num_keys, dst)
+        if len(keys_collected)==num_keys:
+            if dst < min_dst:
+                min_dst = dst
+                print(''.join(keys_collected))
+                print(min_dst)
+                break
+        for key_pos in keys_left:
+            if key_pos != node:
+                id = (node, key_pos)
+                lpath, doors = shortest_path[id]
+                new_length = lpath + dst
+                new_doors = doors - keys_collected
+                if len(new_doors) == 0:# and new_length <= min_dst:
+                    new_key = graph.nodes[key_pos]['val']
+                    keys_collected_new = deepcopy(keys_collected)
+                    keys_collected_new.add(new_key)
+                    keys_left_new = deepcopy(keys_left)
+                    keys_left_new = list(keys_left_new)
+                    keys_left_new.remove(key_pos)
+                    keys_left_new = tuple(keys_left_new)
+                    heappush(q, (new_length, keys_left_new, keys_collected_new, key_pos))
 
-ll = list(nx.all_shortest_paths(G, player, [lower[k] for k in paths]))
-print(ll)
-
-exit(1)
-
-
-q = [(player, 0, None)]
-visited = []
-_keys = {}
-_doors = {}
-while len(q)>0:
-    node, dst, key = q.pop()
-    if node not in visited:
-        visited.append(node)
-        if node['val'].isupper():
-            if key is not None and node['val'] == key['val'].upper():
-                node['val'] = '.'
-                key['val'] = '.'
-                continue
-        elif node['val'].islower():
-            key = node
-        for n in G.neighbors(node):
-            q.append([n, dst+1, key])
-
-
-
-
+print('RES: ', min_dst)
