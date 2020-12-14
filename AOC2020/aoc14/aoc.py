@@ -18,12 +18,12 @@ def write_values(mask, address, value):
     bin_str = bin(int(value))[2:]
     bin_str = "0" * (36 - len(bin_str)) + bin_str
     res_l = []
-    for maskb, valb in zip(mask[::-1], bin_str[::-1]):
+    for maskb, valb in zip(mask, bin_str):
         if maskb == "X":
             res_l.append(valb)
         else:
             res_l.append(maskb)
-    mem_dict[address] = "".join(res_l[::-1])
+    mem_dict[address] = "".join(res_l)
 
 
 for v in values:
@@ -43,12 +43,12 @@ def write_values_2(mask, address, value):
     bin_addr = bin(int(address))[2:]
     bin_addr = "0" * (36 - len(bin_addr)) + bin_addr
     res_l = []
-    for maskb, addb in zip(mask[::-1], bin_addr[::-1]):
+    for maskb, addb in zip(mask, bin_addr):
         if maskb in ["X", "1"]:
             res_l.append(maskb)
         else:
             res_l.append(addb)
-    addr = "".join(res_l[::-1])
+    addr = "".join(res_l)
 
     num_x = addr.count("X")
     for comb in product(["0", "1"], repeat=num_x):
