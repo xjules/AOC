@@ -12,3 +12,10 @@ def read_lines_str(filename, ch=None):
             return [a.split(ch) for a in l]
         return l
     return None
+
+
+def read_lines_str_stripped(filename):
+    with open(filename) as f:
+        l = f.readlines()
+        return [line.strip() for line in l]
+    return None
