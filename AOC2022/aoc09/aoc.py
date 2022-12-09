@@ -16,25 +16,21 @@ class Head:
         self._idx = idx
 
         self._tail = tail
-        self._d = "U"
-        self._steps = 0
         self.history = {}
         self.update_pos((0, 0))
 
     def set_dir_steps(self, d, steps):
-        self._d = d
-        self._steps = steps
-        self.move_steps()
+        self.move_steps(d, steps)
 
-    def move_steps(self):
+    def move_steps(self, d, steps):
         d_dict = {
             "D": (0, -1),
             "U": (0, 1),
             "L": (-1, 0),
             "R": (1, 0),
         }
-        for i in range(self._steps):
-            self.update_pos(d_dict[self._d])
+        for i in range(steps):
+            self.update_pos(d_dict[d])
             if self._tail:
                 self._tail.follow(self)
 
