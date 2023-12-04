@@ -19,7 +19,6 @@ def sum_calibration_values_with_text(input_document):
         idx = 0
         while idx < len(line):
             skip_size = 1
-            _line = line[idx:]
             if line[idx].isdigit():
                 if left_num is None:
                     left_num = line[idx]
@@ -30,7 +29,7 @@ def sum_calibration_values_with_text(input_document):
                         if left_num is None:
                             left_num = num_digit
                         right_num = num_digit
-                        skip_size = len(text_digit)
+                        skip_size = len(text_digit) - 1
             idx += skip_size
         print(f"{line=}")
         print(f"{left_num=} {right_num=}")
@@ -50,6 +49,6 @@ input_document = [
     "zoneight234",
     "7pqrstsixteen",
 ]
-input_document = open("AOC2023/aoc01/test_input.txt").readlines()
+input_document = open("AOC2023/aoc01/input.txt").readlines()
 result = sum_calibration_values_with_text(input_document)
 print("Sum of calibration values:", result)
